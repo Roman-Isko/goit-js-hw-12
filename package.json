@@ -20,6 +20,7 @@
     "axios": "^1.9.0",
     "flatpickr": "^4.6.13",
     "izitoast": "^1.4.0",
+    "notiflix": "^3.2.8",
     "simplelightbox": "^2.14.3",
     "vite-plugin-full-reload": "^1.2.0",
     "vite-plugin-html-inject": "^1.1.2"
