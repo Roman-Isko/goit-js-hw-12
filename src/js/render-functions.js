@@ -1,22 +1,11 @@
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
 
-const gallery = document.querySelector('.gallery');
-
 let lightbox = null;
 
-export function renderGalleryMarkup(images) {
+export function renderGalleryMarkup(images, container) {
   const markup = images
-    .map(
-      ({
-        webformatURL,
-        largeImageURL,
-        tags,
-        likes,
-        views,
-        comments,
-        downloads,
-      }) => `
+    .map(({ webformatURL, largeImageURL, tags, likes, views, comments, downloads }) => `
       <li class="gallery-item">
         <a class="gallery-link" href="${largeImageURL}">
           <img class="gallery-image" src="${webformatURL}" alt="${tags}" />
@@ -28,11 +17,9 @@ export function renderGalleryMarkup(images) {
           <p><b>Downloads:</b> ${downloads}</p>
         </div>
       </li>
-    `
-    )
-    .join('');
+    `).join('');
 
-  gallery.insertAdjacentHTML('beforeend', markup);
+  container.insertAdjacentHTML('beforeend', markup);
 
   if (!lightbox) {
     lightbox = new SimpleLightbox('.gallery a', {
@@ -46,6 +33,12 @@ export function renderGalleryMarkup(images) {
   }
 }
 
-export function clearGallery() {
-  gallery.innerHTML = '';
+export function clearGallery(container) {
+  container.innerHTML = '';
+}
+
+export function refreshLightbox() {
+  if (lightbox) {
+    lightbox.refresh();
+  }
 }
