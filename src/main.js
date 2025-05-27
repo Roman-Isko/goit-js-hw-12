@@ -1,11 +1,18 @@
-import { fetchImages } from './js/pixabay-api.js';
-import { renderGalleryMarkup, clearGallery, refreshLightbox } from './js/render-functions.js';
+import { getImagesByQuery } from './js/pixabay-api.js';
+import {
+  renderGalleryMarkup,
+  clearGallery,
+  showLoader,
+  hideLoader,
+  showLoadMoreButton,
+  hideLoadMoreButton,
+  refreshLightbox,
+} from './js/render-functions.js';
 import Notiflix from 'notiflix';
 
 const form = document.getElementById('search-form');
 const gallery = document.querySelector('.gallery');
 const loadMoreBtn = document.querySelector('.load-more');
-const loader = document.querySelector('.loader');
 
 let currentPage = 1;
 let currentQuery = '';
@@ -19,72 +26,93 @@ async function handleSearch(event) {
   const query = event.currentTarget.elements.searchQuery.value.trim();
 
   if (!query) {
-    Notiflix.Notify.failure('Please enter a search term.');
+    if (document.body) {
+      Notiflix.Notify.failure('Please enter a search term.');
+    }
     return;
   }
 
   currentQuery = query;
   currentPage = 1;
-  clearGallery(gallery);
-  toggleLoader(true);
-  hideLoadMore();
+  clearGallery();
+  hideLoadMoreButton();
+  showLoader();
 
   try {
-    const { hits, totalHits: total } = await fetchImages(query, currentPage);
+    const { hits, totalHits: total } = await getImagesByQuery(query, currentPage);
     totalHits = total;
 
     if (hits.length === 0) {
-      Notiflix.Notify.failure('Sorry, no images match your search query. Please try again.');
+      if (document.body) {
+        Notiflix.Notify.failure(
+          'Sorry, no images match your search query. Please try again.'
+        );
+      }
       return;
     }
 
-    renderGalleryMarkup(hits, gallery);
-    Notiflix.Notify.success(`Hooray! We found ${total} images.`);
+    renderGalleryMarkup(hits);
     refreshLightbox();
 
-    if (hits.length < 40 || hits.length >= total) {
-      hideLoadMore();
+    if (document.body) {
+      Notiflix.Notify.success(`Hooray! We found ${total} images.`);
+    }
+
+    if (hits.length < 15 || hits.length >= total) {
+      hideLoadMoreButton();
+      if (document.body) {
+        Notiflix.Notify.info('Вибачте, але ви досягли кінця результатів пошуку.');
+      }
     } else {
-      showLoadMore();
+      showLoadMoreButton();
     }
   } catch (error) {
-    Notiflix.Notify.failure('Something went wrong. Please try again later.');
+    if (document.body) {
+      Notiflix.Notify.failure('Something went wrong. Please try again later.');
+    }
     console.error(error);
   } finally {
-    toggleLoader(false);
+    hideLoader();
   }
 }
 
 async function handleLoadMore() {
   currentPage += 1;
-  toggleLoader(true);
+  showLoader();
 
   try {
-    const { hits } = await fetchImages(currentQuery, currentPage);
-
-    renderGalleryMarkup(hits, gallery);
+    const { hits } = await getImagesByQuery(currentQuery, currentPage);
+    renderGalleryMarkup(hits);
     refreshLightbox();
+    smoothScroll();
 
-    if ((currentPage - 1) * 40 + hits.length >= totalHits) {
-      hideLoadMore();
-      Notiflix.Notify.info("You've reached the end of search results.");
+    const alreadyLoaded = currentPage * 15;
+    if (alreadyLoaded >= totalHits) {
+      hideLoadMoreButton();
+      if (document.body) {
+        Notiflix.Notify.info('Вибачте, але ви досягли кінця результатів пошуку.');
+      }
     }
   } catch (error) {
-    Notiflix.Notify.failure('Failed to load more images.');
+    if (document.body) {
+      Notiflix.Notify.failure('Failed to load more images.');
+    }
     console.error(error);
   } finally {
-    toggleLoader(false);
+    hideLoader();
   }
 }
 
-function showLoadMore() {
-  loadMoreBtn.classList.remove('is-hidden');
-}
+function smoothScroll() {
+  const { height: cardHeight } =
+    document.querySelector('.gallery-item')?.getBoundingClientRect() || {
+      height: 0,
+    };
 
-function hideLoadMore() {
-  loadMoreBtn.classList.add('is-hidden');
-}
-
-function toggleLoader(show) {
-  loader.classList.toggle('is-hidden', !show);
+  if (cardHeight) {
+    window.scrollBy({
+      top: cardHeight * 2,
+      behavior: 'smooth',
+    });
+  }
 }
